@@ -7,7 +7,7 @@ var RepoBox = React.createClass({
             { className: "form-group" },
             React.createElement(
                 "label",
-                { "for": "repoInput" },
+                { htmlFor: "repoInput" },
                 "User/Repository"
             ),
             React.createElement("input", { id: "repoInput", type: "text", className: "form-control", placeholder: "facebook/react", onChange: this.props.onChange, value: this.props.value })
@@ -31,7 +31,7 @@ var BranchSelector = React.createClass({
             { className: "form-group" },
             React.createElement(
                 "label",
-                { "for": "branchSelector" },
+                { htmlFor: "branchSelector" },
                 "Branch"
             ),
             React.createElement(
