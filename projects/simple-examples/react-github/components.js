@@ -22,7 +22,7 @@ var BranchSelector = React.createClass({
         var branchesArr = [];
         for (var i = 0; i < this.props.branches.length; i++) branchesArr.push(React.createElement(
             "option",
-            { key: this.props.branches[i].name, value: this.props.branches[i].name },
+            { key: this.props.branches[i].name, defaultValue: this.props.branches[i].name },
             this.props.branches[i].name
         ));
 
@@ -36,10 +36,14 @@ var BranchSelector = React.createClass({
             ),
             React.createElement(
                 "select",
-                { id: "branchSelector", className: "form-control", value: this.props.value, onChange: this.props.onChange },
+                { id: "branchSelector", className: "form-control", value: this.props.value, onChange: this.onChange },
                 branchesArr
             )
         );
+    },
+
+    onChange: function (event) {
+        this.props.onChange(event.target.value);
     }
 });
 
@@ -111,12 +115,17 @@ var CommitsComponent = React.createClass({
         return { commits: [], branches: [], branch: 'master', repo: 'facebook/react', commitTimeout: null, branchTimeout: null, apiRemaining: 60, apiReset: Date.now() };
     },
 
-    getCommits: function (skipTimeouts) {
+    getCommits: function (skipTimeouts, newBranch) {
+        var branch = newBranch ? newBranch : this.state.branch;
+
         if (skipTimeouts) {
-            $.get('https://api.github.com/repos/' + this.state.repo + '/commits?sha=' + this.state.branch, (data, textStatus, request) => this.setState({ 'commits': data, 'apiRemaining': request.getResponseHeader('X-RateLimit-Remaining'), 'apiReset': parseInt(request.getResponseHeader('X-RateLimit-Reset')) * 1000 })).fail(response => this.setState({ 'apiRemaining': request.getResponseHeader('X-RateLimit-Remaining'), 'apiReset': parseInt(request.getResponseHeader('X-RateLimit-Reset')) * 1000 }));
+            $.get('https://api.github.com/repos/' + this.state.repo + '/commits?sha=' + branch, (data, textStatus, request) => {
+                console.log('success!');
+                this.setState({ 'commits': data, 'apiRemaining': request.getResponseHeader('X-RateLimit-Remaining'), 'apiReset': parseInt(request.getResponseHeader('X-RateLimit-Reset')) * 1000 });
+            }).fail(response => this.setState({ 'apiRemaining': request.getResponseHeader('X-RateLimit-Remaining'), 'apiReset': parseInt(request.getResponseHeader('X-RateLimit-Reset')) * 1000 }));
         } else {
             var timeout = setTimeout(function () {
-                $.get('https://api.github.com/repos/' + this.state.repo + '/commits?sha=' + this.state.branch, (data, textStatus, request) => this.setState({ 'commits': data, 'apiRemaining': request.getResponseHeader('X-RateLimit-Remaining'), 'apiReset': parseInt(request.getResponseHeader('X-RateLimit-Reset')) * 1000 })).fail(response => this.setState({ 'apiRemaining': response.getResponseHeader('X-RateLimit-Remaining'), 'apiReset': parseInt(response.getResponseHeader('X-RateLimit-Reset')) * 1000 }));
+                $.get('https://api.github.com/repos/' + this.state.repo + '/commits?sha=' + branch, (data, textStatus, request) => this.setState({ commits: data, 'apiRemaining': request.getResponseHeader('X-RateLimit-Remaining'), 'apiReset': parseInt(request.getResponseHeader('X-RateLimit-Reset')) * 1000 })).fail(response => this.setState({ 'apiRemaining': response.getResponseHeader('X-RateLimit-Remaining'), 'apiReset': parseInt(response.getResponseHeader('X-RateLimit-Reset')) * 1000 }));
                 this.setState({ 'commitTimeout': null });
             }.bind(this), 1000);
         }
@@ -140,10 +149,11 @@ var CommitsComponent = React.createClass({
         this.getBranches();
     },
 
-    branchChange: function (event) {
+    branchChange: function (branch) {
+        console.log('branch changed to ' + branch);
         this.stopTimeouts();
-        this.setState({ 'branch': event.target.value });
-        this.getCommits(true);
+        this.setState({ 'branch': branch });
+        this.getCommits(true, branch);
     },
 
     stopTimeouts: function () {
